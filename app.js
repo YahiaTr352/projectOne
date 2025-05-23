@@ -11,7 +11,7 @@ const ensureTTLIndex = require("./utils/ensureTTLIndex");
 
     const allowedOrigins = [
       'http://localhost:3001',
-      'https://projecto-cc3v8s112-yahiatrs-projects.vercel.app'
+      'https://projecttwo-iqjp.onrender.com'
     ];
 
     app.use(cors({
