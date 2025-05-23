@@ -195,6 +195,7 @@ const getToken = async (req, res) => {
 
 const paymentRequest = async (req, res) => {
     try {
+        console.log("📥 Incoming request body:", req.body);
         const { code, customerMSISDN, transactionID, merchantMSISDN, amount, token } = req.body;
 
         if (!customerMSISDN || !merchantMSISDN || !amount || !transactionID || !token) {
