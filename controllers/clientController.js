@@ -10,6 +10,16 @@ const {isValidAmount, calculateFees, generateNumericCode, findMerchantAndClient,
 const { encryptBalance, decryptBalance } = require('../utils/encryption');
 const { verifyToken } = require("../utils/paymentUtils");
 
+
+const saveServer = (req,res) => {
+    try{
+        return res.status(200).json({message : "server is running"});
+
+    }catch(error){
+        return res.status(400).json({message : "something went wrong" , error})
+    }
+}
+
 const CreateHashCode = async (req, res) => {
     try {
         const { companyName, programmName, merchantMSISDN } = req.body;
@@ -649,6 +659,7 @@ const resendOTP = async (req, res) => {
 };
 
 module.exports = {
+    saveServer,
     CreateHashCode,
     addUrl,
     getUrl,

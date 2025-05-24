@@ -1,7 +1,8 @@
 const express = require("express");
-const { CreateHashCode, getToken, paymentRequest, paymentConfirmation, resendOTP, addUrl, getUrl } = require("../controllers/clientController");
+const { CreateHashCode, getToken, paymentRequest, paymentConfirmation, resendOTP, addUrl, getUrl, saveServer } = require("../controllers/clientController");
 const router = express.Router();
 
+router.post("/save-server" , saveServer);
 router.post("/get-code" , CreateHashCode);
 router.post("/add-url" , addUrl);
 router.post("/get-url" , getUrl);
