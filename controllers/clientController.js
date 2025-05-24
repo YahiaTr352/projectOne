@@ -318,11 +318,13 @@ const paymentRequest = async (req, res) => {
 
         if (!existingTransaction) {
             newPaymentTransaction = new PaymentTransaction({
+                companyName: matchedClient.companyName,
+                programmName: matchedClient.programmName,
                 merchantMSISDN: merchant._id,
                 customerMSISDN: customerId,
                 amount,
                 fees,
-                transactionID
+                transactionID,
             });
 
             await newPaymentTransaction.save();

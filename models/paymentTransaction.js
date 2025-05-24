@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 
 const paymentTransactionSchema = new mongoose.Schema({
 
+    companyName : {type : String, required : true},
+    programmName : {type : String, required : true},
     customerMSISDN: { type: mongoose.Schema.Types.ObjectId, ref: "Customer"},
     merchantMSISDN:  { type: mongoose.Schema.Types.ObjectId, ref: "Merchant"},
     amount: {type : Number , required : true},
