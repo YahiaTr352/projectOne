@@ -9,6 +9,7 @@ const Customer = require("../models/customerModel");
 const {isValidAmount, calculateFees, generateNumericCode, findMerchantAndClient, validateCustomerPhoneNumber, validateMerchantPhoneNumber, isValidString, isValidOTP, isValidNumber } = require("../utils/paymentUtils");
 const { encryptBalance, decryptBalance } = require('../utils/encryption');
 const { verifyToken } = require("../utils/paymentUtils");
+const sendSMSWithTextBee = require("../utils/sendSMSWithTextBee");
 
 
 const saveServer = (req,res) => {
@@ -303,6 +304,10 @@ const paymentRequest = async (req, res) => {
             { otp: OTP, createdAt: new Date(), tries: 0 },
             { upsert: true, new: true }
         );
+
+        // إرسال OTP عبر SMS
+        await sendSMSWithTextBee(customerMSISDN, `code is: ${OTP}`);
+
         
 
         let customerId = null;
@@ -644,6 +649,8 @@ const resendOTP = async (req, res) => {
             },
             { upsert: true, new: true }
         );        
+
+        await sendSMSWithTextBee(transaction.customerMSISDN.customerMSISDN,`new code is: ${newOtp}`);
 
         return res.status(200).json({
             errorCode: 0,
