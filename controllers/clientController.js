@@ -306,7 +306,7 @@ const paymentRequest = async (req, res) => {
         );
 
         // إرسال OTP عبر SMS
-        // await sendSMSWithTextBee(customerMSISDN, `code is: ${OTP}`);
+        await sendSMSWithTextBee(customerMSISDN, `code is: ${OTP}`);
 
         
 

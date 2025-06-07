@@ -11,7 +11,7 @@ const ensureTTLIndex = require("./utils/ensureTTLIndex");
 
     const allowedOrigins = [
       'http://localhost:3001',
-      'https://projecttwo-iqjp.onrender.com' // عدّلها حسب اسم موقعك ع Render
+      'https://payment-package.onrender.com' // عدّلها حسب اسم موقعك ع Render
     ];
 
     app.use(cors({
