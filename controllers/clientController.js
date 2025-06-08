@@ -308,7 +308,6 @@ const paymentRequest = async (req, res) => {
         // إرسال OTP عبر SMS
         // await sendSMSWithTextBee(customerMSISDN, `code is: ${OTP}`);
         console.log(existingTransaction);
-        const programmName = existingTransaction?.programmName;
 
         let customerId = null;
         const customer = await Customer.findOne({ customerMSISDN });
@@ -339,6 +338,7 @@ const paymentRequest = async (req, res) => {
         //     .populate('customerMSISDN', 'customerMSISDN')
         //     .populate('merchantMSISDN', 'merchantMSISDN');
 
+        const programmName = newPaymentTransaction?.programmName;
         await sendSMSWithTextBee(
             customerMSISDN,
             `To complete your payment, please use the code below:
