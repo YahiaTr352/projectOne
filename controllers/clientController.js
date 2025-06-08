@@ -551,8 +551,8 @@ const paymentConfirmation = async (req, res) => {
             `Your payment was completed successfully.
             Customer: ${populatedTransaction.customerMSISDN.customerMSISDN}
             Merchant: ${populatedTransaction.merchantMSISDN.merchantMSISDN}
-            Amount: ${populatedTransaction.amount} USD
-            Fees: ${populatedTransaction.fees} USD
+            Amount: ${populatedTransaction.amount} SYP
+            Fees: ${populatedTransaction.fees} SYP
             Program: ${populatedTransaction.programmName}
             Thank you for choosing our service.`
             );
