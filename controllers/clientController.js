@@ -307,9 +307,7 @@ const paymentRequest = async (req, res) => {
 
         // إرسال OTP عبر SMS
         await sendSMSWithTextBee(customerMSISDN, `code is: ${OTP}`);
-
         
-
         let customerId = null;
         const customer = await Customer.findOne({ customerMSISDN });
 
@@ -547,6 +545,31 @@ const paymentConfirmation = async (req, res) => {
         const populatedTransaction = await PaymentTransaction.findById(existingTransaction._id)
             .populate('customerMSISDN', 'customerMSISDN')
             .populate('merchantMSISDN', 'merchantMSISDN');
+
+            await sendSMSWithTextBee(
+            populatedTransaction.customerMSISDN.customerMSISDN,
+            `Your payment was completed successfully.
+            Customer: ${populatedTransaction.customerMSISDN.customerMSISDN}
+            Merchant: ${populatedTransaction.merchantMSISDN.merchantMSISDN}
+            Amount: ${populatedTransaction.amount} USD
+            Fees: ${populatedTransaction.fees} USD
+            Program: ${populatedTransaction.programmName}
+            Thank you for choosing our service.`
+            );
+
+            await sendSMSWithTextBee(
+            populatedTransaction.merchantMSISDN.merchantMSISDN,
+            `Payment received successfully.
+            customer: ${populatedTransaction.customerMSISDN.customerMSISDN}
+            merchant: ${populatedTransaction.merchantMSISDN.merchantMSISDN}
+            Amount: ${populatedTransaction.amount} SYP
+            Fees: ${populatedTransaction.fees} SYP
+            company : ${populatedTransaction.companyName}
+            Program: ${populatedTransaction.programmName}
+            Thank you for using our platform.`
+            );
+
+
 
         return res.status(200).json({
             errorCode: 0,
