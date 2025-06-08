@@ -82,9 +82,7 @@ const addCustomerBalance = async (req, res) => {
 
     // Decrypt existing balance and add new balance
     const currentBalance = decryptBalance(customer.balance);
-    console.log(currentBalance);
     const updatedBalance = Number(currentBalance) + Number(balanceToAdd);
-    console.log(updatedBalance);
     // Update balance
     customer.balance = encryptBalance(updatedBalance);
     await customer.save();

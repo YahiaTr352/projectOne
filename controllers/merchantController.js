@@ -78,9 +78,7 @@ const addMerchantBalance = async (req, res) => {
 
     // Decrypt existing balance and add new balance
     const currentBalance = decryptBalance(merchant.balance);
-    console.log(currentBalance);
     const updatedBalance = Number(currentBalance) + Number(balanceToAdd);
-    console.log(updatedBalance);
     // Update balance
     merchant.balance = encryptBalance(updatedBalance);
     await merchant.save();

@@ -194,7 +194,6 @@ const getToken = async (req, res) => {
         });
 
     } catch (error) {
-        console.log(error);
         return res.status(500).json({ 
             errorCode: -500,
             errorDesc: "Technical Error",
@@ -206,7 +205,6 @@ const getToken = async (req, res) => {
 
 const paymentRequest = async (req, res) => {
     try {
-        console.log("📥 Incoming request body:", req.body);
         const { code, customerMSISDN, transactionID, merchantMSISDN, amount, token } = req.body;
 
         if (!customerMSISDN || !merchantMSISDN || !amount || !transactionID || !token) {
@@ -433,11 +431,7 @@ const paymentConfirmation = async (req, res) => {
             });
         }
 
-        console.log("Transaction customerMSISDN:", existingTransaction.customerMSISDN.customerMSISDN);
-
         const otpRecord = await Otp.findOne({ customerMSISDN: existingTransaction.customerMSISDN.customerMSISDN });
-
-        console.log("OTP record found:", otpRecord); // 🔎
 
         if (!otpRecord) {
             return res.status(404).json({
