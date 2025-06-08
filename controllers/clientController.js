@@ -210,7 +210,7 @@ const paymentRequest = async (req, res) => {
         if (!customerMSISDN || !merchantMSISDN || !amount || !transactionID || !token) {
             return res.status(400).json({
                 errorCode: -99,
-                errorDesc: "All fields are required"
+                errorDesc: "one or more parameters are null"
             });
         }
 
@@ -228,6 +228,8 @@ const paymentRequest = async (req, res) => {
                 errorDesc: "Invalid amount (the amount is negative or it contains comma, symbols or characters)"
             });
         }
+
+        if(!isValidString(transactionID)) return res.status(400).json({message : "Invalid transactionID"});
 
         const { valid } = verifyToken(token);
         if (!valid) {
@@ -267,10 +269,10 @@ const paymentRequest = async (req, res) => {
             if (existingTransaction) {
                 const now = new Date();
                 const elapsedMinutes = (now - new Date(existingTransaction.createdAt)) / 1000 / 60;
-                if (elapsedMinutes > 10) {
+                if (elapsedMinutes >= 10) {
                     return res.status(400).json({
                         errorCode: -98,
-                        errorDesc: "Expired transaction (more than 10 minutes have been passed)"
+                        errorDesc: "Expired transaction (10 minutes have been passed)"
                     });
                 }
             
@@ -309,8 +311,10 @@ const paymentRequest = async (req, res) => {
         const programmName = existingTransaction.programmName;
         await sendSMSWithTextBee(
             customerMSISDN,
-            `Dear customer, your code is: ${OTP}. Please use this code to complete the payment of ${amount} for the "${programmName}" program. Thank you for using our services.`
+            `Dear customer, your code is: ${OTP}. Please use this code to complete the payment of ${amount} (including fees of ${fees}) for the "${programmName}" program. Thank you for choosing our services.`
         );
+
+
         
         let customerId = null;
         const customer = await Customer.findOne({ customerMSISDN });
@@ -337,23 +341,23 @@ const paymentRequest = async (req, res) => {
             await newPaymentTransaction.save();
         }
 
-        const populatedTransaction = await PaymentTransaction.findById(newPaymentTransaction._id)
-            .populate('customerMSISDN', 'customerMSISDN')
-            .populate('merchantMSISDN', 'merchantMSISDN');
+        // const populatedTransaction = await PaymentTransaction.findById(newPaymentTransaction._id)
+        //     .populate('customerMSISDN', 'customerMSISDN')
+        //     .populate('merchantMSISDN', 'merchantMSISDN');
 
         return res.status(200).json({
             errorCode: 0,
             errorDesc: "Success",
-            details: {
-                otp: OTP,
-                transactionDetails: {
-                    transactionID: populatedTransaction.transactionID,
-                    amount: populatedTransaction.amount,
-                    fees: populatedTransaction.fees,
-                    customerMSISDN: populatedTransaction.customerMSISDN.customerMSISDN,
-                    merchantMSISDN: populatedTransaction.merchantMSISDN.merchantMSISDN
-                }
-            }
+            // details: {
+            //     otp: OTP,
+            //     transactionDetails: {
+            //         transactionID: populatedTransaction.transactionID,
+            //         amount: populatedTransaction.amount,
+            //         fees: populatedTransaction.fees,
+            //         customerMSISDN: populatedTransaction.customerMSISDN.customerMSISDN,
+            //         merchantMSISDN: populatedTransaction.merchantMSISDN.merchantMSISDN
+            //     }
+            // }
         });
 
     } catch (error) {
@@ -387,6 +391,8 @@ const paymentConfirmation = async (req, res) => {
         }
 
         if(!isValidOTP(OTP)) return res.status(400).json({message : "Invalid OTP"});
+
+        if(!isValidString(transactionID)) return res.status(400).json({message : "Invalid transactionID"});
 
         const { valid } = verifyToken(token);
         if (!valid) {
@@ -430,10 +436,10 @@ const paymentConfirmation = async (req, res) => {
         const elapsedMs = now - new Date(existingTransaction.createdAt);
         const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
 
-        if (elapsedDays > 1) {
+        if (elapsedDays >= 1) {
             return res.status(411).json({
                 errorCode: -98,
-                errorDesc: "Expired transaction (more than 1 day has been passed)"
+                errorDesc: "Expired transaction (1 day has been passed)"
             });
         }
 
@@ -456,7 +462,7 @@ const paymentConfirmation = async (req, res) => {
                 await Otp.deleteOne({ _id: otpRecord._id });
                 return res.status(405).json({
                     errorCode: -95,
-                    errorDesc: "OTP attempts exceeded. Please request a new verification code"
+                    errorDesc: "Exceed OTP tries"
                 });
             }
 
@@ -490,7 +496,7 @@ const paymentConfirmation = async (req, res) => {
         if (customerBalance < totalAmount) {
             return res.status(410).json({
                 errorCode: -13,
-                errorDesc: "Customer does not have enough balance"
+                errorDesc: "Customer MSISDN doesn’t have enough balance"
             });
         }
 
@@ -574,15 +580,15 @@ const paymentConfirmation = async (req, res) => {
         return res.status(200).json({
             errorCode: 0,
             errorDesc: "Success",
-            sms: {
-                transactionDetails: {
-                    transactionID: populatedTransaction.transactionID,
-                    amount: populatedTransaction.amount,
-                    fees: populatedTransaction.fees,
-                    customerMSISDN: populatedTransaction.customerMSISDN.customerMSISDN,
-                    merchantMSISDN: populatedTransaction.merchantMSISDN.merchantMSISDN
-                }
-            }
+            // sms: {
+            //     transactionDetails: {
+            //         transactionID: populatedTransaction.transactionID,
+            //         amount: populatedTransaction.amount,
+            //         fees: populatedTransaction.fees,
+            //         customerMSISDN: populatedTransaction.customerMSISDN.customerMSISDN,
+            //         merchantMSISDN: populatedTransaction.merchantMSISDN.merchantMSISDN
+            //     }
+            // }
         });
 
     } catch (error) {
@@ -611,6 +617,8 @@ const resendOTP = async (req, res) => {
             return res.status(400).json({ message: "Invalid merchant phone number. It must start with a '+' followed by digits." });
         }
 
+        if(!isValidString(transactionID)) return res.status(400).json({message : "Invalid transactionID"});
+
         const { valid } = verifyToken(token);
         if (!valid) {
             return res.status(400).json({
@@ -632,7 +640,7 @@ const resendOTP = async (req, res) => {
 
         if (transaction.success) {
             return res.status(405).json({
-                errorCode: -97,
+                errorCode: -90,
                 errorDesc: "Cannot resend OTP for a confirmed transaction"
             });
         }
@@ -651,10 +659,10 @@ const resendOTP = async (req, res) => {
         const now = new Date();
         const elapsedMinutes = (now - transaction.createdAt) / 1000 / 60;
 
-        if (elapsedMinutes > 10) {
+        if (elapsedMinutes >= 10) {
             return res.status(410).json({
                 errorCode: -98,
-                errorDesc: "Expired transaction (more than 10 minutes)"
+                errorDesc: "Expired transaction (10 minutes have been passed)"
             });
         }
 
@@ -677,8 +685,8 @@ const resendOTP = async (req, res) => {
 
         return res.status(200).json({
             errorCode: 0,
-            errorDesc: "Success",
-            otp: newOtp
+            errorDesc: "Success"
+            // otp: newOtp
         });
 
     } catch (error) {
