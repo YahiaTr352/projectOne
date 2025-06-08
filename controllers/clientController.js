@@ -307,12 +307,22 @@ const paymentRequest = async (req, res) => {
 
         // إرسال OTP عبر SMS
         // await sendSMSWithTextBee(customerMSISDN, `code is: ${OTP}`);
-
+        console.log(existingTransaction);
         const programmName = existingTransaction?.programmName;
+
         await sendSMSWithTextBee(
             customerMSISDN,
-            `Dear customer, your code is: ${OTP}. Please use this code to complete the payment of ${amount} (including fees of ${fees}) for the "${programmName}" program. Thank you for choosing our services.`
+            `To complete your payment, please use the code below:
+            
+            Customer: ${customerMSISDN}
+            Amount: ${amount} SYP
+            Fees: ${fees} SYP
+            Program: ${programmName}
+            Code: ${OTP}
+            
+            Thank you for choosing our service.`
         );
+
 
 
         
