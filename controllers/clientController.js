@@ -310,22 +310,6 @@ const paymentRequest = async (req, res) => {
         console.log(existingTransaction);
         const programmName = existingTransaction?.programmName;
 
-        await sendSMSWithTextBee(
-            customerMSISDN,
-            `To complete your payment, please use the code below:
-            
-            Customer: ${customerMSISDN}
-            Amount: ${amount} SYP
-            Fees: ${fees} SYP
-            Program: ${programmName}
-            Code: ${OTP}
-            
-            Thank you for choosing our service.`
-        );
-
-
-
-        
         let customerId = null;
         const customer = await Customer.findOne({ customerMSISDN });
 
@@ -354,6 +338,19 @@ const paymentRequest = async (req, res) => {
         // const populatedTransaction = await PaymentTransaction.findById(newPaymentTransaction._id)
         //     .populate('customerMSISDN', 'customerMSISDN')
         //     .populate('merchantMSISDN', 'merchantMSISDN');
+
+        await sendSMSWithTextBee(
+            customerMSISDN,
+            `To complete your payment, please use the code below:
+            Customer: ${customerMSISDN}
+            Amount: ${amount} SYP
+            Fees: ${fees} SYP
+            Program: ${programmName}
+            Code: ${OTP}
+            
+            Thank you for choosing our service.`
+        );
+        
 
         return res.status(200).json({
             errorCode: 0,
