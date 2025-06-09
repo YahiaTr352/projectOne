@@ -1,8 +1,8 @@
 const axios = require('axios');
 
 async function sendSMSWithTextBee(phoneNumber, message) {
-    const API_KEY = "f87e4a69-43e1-4194-9689-4d05e79d5509"; // استبدلها بـ API Key تبعك
-    const DEVICE_ID = "6835c3649f3070afa27261ac";           // من التطبيق
+    const API_KEY = process.env.API_KEY;
+    const DEVICE_ID = process.env.DEVICE_ID;       
 
     try {
         const response = await axios.post(

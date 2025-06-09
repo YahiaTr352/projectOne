@@ -1,6 +1,6 @@
 const CryptoJS = require('crypto-js');
 
-const SECRET_KEY = "SecretKey";
+const SECRET_KEY = process.env.SECRET_KEY;
 
 const encryptBalance = (balance) => {
     if (typeof balance !== 'string') {

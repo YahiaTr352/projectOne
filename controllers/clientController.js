@@ -29,26 +29,35 @@ const CreateHashCode = async (req, res) => {
             return res.status(400).json({ message: "All fields are required" });
         }
 
-        if(!isValidString(companyName)) return res.status(400).json({message : "Invalid CompanyName"});
-        if(!isValidString(programmName)) return res.status(400).json({message : "Invalid ProgrammName"});
-        if (!validateMerchantPhoneNumber(merchantMSISDN)) {
-            return res.status(400).json({ message: "Invalid Merchant Phone Number. It must start with a '+' followed by digits." });
+        if (!isValidString(companyName)) {
+            return res.status(400).json({ message: "Invalid Company Name" });
         }
 
-        const existingClient = await Client.findOne({
-            $or: [
-                { companyName },
-                { programmName },
-            ]
-        });
+        if (!isValidString(programmName)) {
+            return res.status(400).json({ message: "Invalid Program Name" });
+        }
 
-        if (existingClient) {
-            return res.status(400).json({ message: "Company name or program name already exists." });
+        if (!validateMerchantPhoneNumber(merchantMSISDN)) {
+            return res.status(400).json({
+                message: "Invalid Merchant Phone Number. It must start with a '+' followed by digits."
+            });
         }
 
         const merchant = await Merchant.findOne({ merchantMSISDN });
         if (!merchant) {
             return res.status(404).json({ message: "Merchant not found" });
+        }
+
+        const existingClient = await Client.findOne({
+            companyName,
+            programmName,
+            merchantMSISDN: merchant._id
+        });
+
+        if (existingClient) {
+            return res.status(400).json({
+                message: "This program already exists for this company and merchant."
+            });
         }
 
         const code = generateNumericCode(12);
@@ -67,7 +76,10 @@ const CreateHashCode = async (req, res) => {
         return res.status(200).json({ code });
 
     } catch (error) {
-        return res.status(500).json({ message: "Something went wrong", error: error.message });
+        return res.status(500).json({
+            message: "Something went wrong",
+            error: error.message
+        });
     }
 };
 
@@ -77,7 +89,6 @@ const addUrl = async (req, res) => {
 
     if(!companyName || !programmName || !code || !url) return res.status(400).json({message : "All fields are required"});
 
-    // تحقق من وجود الـ client بنفس الـ companyName و programmName و code
     const existingClient = await Client.findOne({ companyName, programmName});
 
     if (!existingClient) {
@@ -90,10 +101,8 @@ const addUrl = async (req, res) => {
       return res.status(404).json({ message: "Invalid Code" });
     }
 
-    // تحديث أو إضافة الـ URL
     existingClient.url = url;
 
-    // حفظ التغييرات
     await existingClient.save();
 
     res.status(200).json({ message: "URL added successfully", data: existingClient });
@@ -108,7 +117,6 @@ const getUrl = async (req, res) => {
   try {
     const { companyName, programmName, code } = req.body;
 
-    // التحقق من وجود القيم المطلوبة
     if (!companyName || !programmName || !code) {
       return res.status(400).json({ message: "Missing required parameters." });
     }
@@ -124,7 +132,7 @@ const getUrl = async (req, res) => {
         if (!isCodeValid) {
       return res.status(404).json({ message: "Invalid Code" });
     }
-    // إرجاع الـ URL إذا كان موجودًا
+
     if (existingClient.url) {
       return res.status(200).json({ url: existingClient.url });
     } else {
@@ -290,24 +298,13 @@ const paymentRequest = async (req, res) => {
 
         const OTP = generateNumericCode(6);
         
-        // const OTP = "000000";
         const fees = calculateFees(amount);
-
-        // await Otp.create({
-        //     customerMSISDN,
-        //     otp: OTP,
-        //     createdAt: new Date()
-        // });
 
         await Otp.findOneAndUpdate(
             { customerMSISDN },
             { otp: OTP, createdAt: new Date(), tries: 0 },
             { upsert: true, new: true }
         );
-
-        // إرسال OTP عبر SMS
-        // await sendSMSWithTextBee(customerMSISDN, `code is: ${OTP}`);
-        console.log(existingTransaction);
 
         let customerId = null;
         const customer = await Customer.findOne({ customerMSISDN });
@@ -334,10 +331,6 @@ const paymentRequest = async (req, res) => {
             await newPaymentTransaction.save();
         }
 
-        // const populatedTransaction = await PaymentTransaction.findById(newPaymentTransaction._id)
-        //     .populate('customerMSISDN', 'customerMSISDN')
-        //     .populate('merchantMSISDN', 'merchantMSISDN');
-
         const programmName = newPaymentTransaction?.programmName;
         await sendSMSWithTextBee(
             customerMSISDN,
@@ -355,16 +348,6 @@ const paymentRequest = async (req, res) => {
         return res.status(200).json({
             errorCode: 0,
             errorDesc: "Success",
-            // details: {
-            //     otp: OTP,
-            //     transactionDetails: {
-            //         transactionID: populatedTransaction.transactionID,
-            //         amount: populatedTransaction.amount,
-            //         fees: populatedTransaction.fees,
-            //         customerMSISDN: populatedTransaction.customerMSISDN.customerMSISDN,
-            //         merchantMSISDN: populatedTransaction.merchantMSISDN.merchantMSISDN
-            //     }
-            // }
         });
 
     } catch (error) {
@@ -587,15 +570,6 @@ const paymentConfirmation = async (req, res) => {
         return res.status(200).json({
             errorCode: 0,
             errorDesc: "Success",
-            // sms: {
-            //     transactionDetails: {
-            //         transactionID: populatedTransaction.transactionID,
-            //         amount: populatedTransaction.amount,
-            //         fees: populatedTransaction.fees,
-            //         customerMSISDN: populatedTransaction.customerMSISDN.customerMSISDN,
-            //         merchantMSISDN: populatedTransaction.merchantMSISDN.merchantMSISDN
-            //     }
-            // }
         });
 
     } catch (error) {
@@ -693,7 +667,6 @@ const resendOTP = async (req, res) => {
         return res.status(200).json({
             errorCode: 0,
             errorDesc: "Success"
-            // otp: newOtp
         });
 
     } catch (error) {
