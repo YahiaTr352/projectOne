@@ -1,14 +1,10 @@
 const mongoose = require("mongoose");
 
-const uri = "mongodb+srv://user1:yahiamo99@cluster0.34d4ikz.mongodb.net/projectS?retryWrites=true&w=majority";
+const uri = process.env.CONNECT_MAIN_DATABASE;
 
 const ConnectDB = async () => {
   try {
-    await mongoose.connect(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 10000,
-    });
+    await mongoose.connect(uri);
 
     console.log("✅ Connected to MongoDB Atlas");
   } catch (error) {

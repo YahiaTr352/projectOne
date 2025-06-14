@@ -191,7 +191,7 @@ const getToken = async (req, res) => {
 
         const token = jwt.sign(
             { companyId: client._id },
-             "SecretKey",
+             process.env.SECRET_KEY,
             { expiresIn: '15m' }
         );
 
@@ -559,7 +559,6 @@ const paymentConfirmation = async (req, res) => {
             customer: ${populatedTransaction.customerMSISDN.customerMSISDN}
             merchant: ${populatedTransaction.merchantMSISDN.merchantMSISDN}
             Amount: ${populatedTransaction.amount} SYP
-            Fees: ${populatedTransaction.fees} SYP
             company : ${populatedTransaction.companyName}
             Program: ${populatedTransaction.programmName}
             Thank you for using our platform.`
