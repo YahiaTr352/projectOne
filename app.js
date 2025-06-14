@@ -10,8 +10,8 @@ const ensureTTLIndex = require("./utils/ensureTTLIndex");
     const port = process.env.Port || 5000;
 
     const allowedOrigins = [
-      'http://localhost:3001',
-      'https://payment-package.onrender.com' // عدّلها حسب اسم موقعك ع Render
+      process.env.BASE_LOCAL_URL,
+      process.env.BASE_PACKAGE_URL // عدّلها حسب اسم موقعك ع Render
     ];
 
     app.use(cors({
