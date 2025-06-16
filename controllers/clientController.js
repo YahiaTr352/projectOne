@@ -191,7 +191,7 @@ const getToken = async (req, res) => {
 
         const token = jwt.sign(
             { companyId: client._id },
-             process.env.SECRET_KEY,
+             process.env.TOKEN_SECRET_KEY,
             { expiresIn: '15m' }
         );
 
