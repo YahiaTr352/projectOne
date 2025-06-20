@@ -1,5 +1,5 @@
 const Customer = require("../models/customerModel");
-const { validateCustomerPhoneNumber, isValidBoolean, isValidNumber } = require("../utils/paymentUtils");
+const { validateCustomerPhoneNumber, isValidBoolean, isValidNumber, isValidAmount } = require("../utils/paymentUtils");
 const { encryptBalance, decryptBalance } = require("../utils/encryption");
 
 const addCustomer = async (req, res) => {
@@ -16,7 +16,7 @@ const addCustomer = async (req, res) => {
       });
     }
     
-    if(!isValidNumber(balance)) return res.status(400).json({message : "Invalid balance"});
+    if(!isValidAmount(balance)) return res.status(400).json({message : "Invalid balance"});
 
     if (!isValidBoolean(hasCustomerWallet)) {
       return res.status(400).json({ message: "Invalid value for hasCustomerWallet. Must be true or false." });
@@ -65,7 +65,7 @@ const addCustomerBalance = async (req, res) => {
       });
     }
 
-    if (!isValidNumber(balanceToAdd)) {
+    if (!isValidAmount(balanceToAdd)) {
       return res.status(400).json({ message: "Invalid balanceToAdd value." });
     }
 

@@ -1,5 +1,5 @@
 const Merchant = require("../models/merchantModel");
-const { validateMerchantPhoneNumber, isValidNumber, isValidBoolean } = require("../utils/paymentUtils");
+const { validateMerchantPhoneNumber, isValidNumber, isValidBoolean, isValidAmount } = require("../utils/paymentUtils");
 const { encryptBalance, decryptBalance } = require("../utils/encryption");
 
 const addMerchant = async (req, res) => {
@@ -14,7 +14,7 @@ const addMerchant = async (req, res) => {
             return res.status(400).json({ message: "Invalid Merchant Phone Number. It must start with a '+' followed by digits." });
           }
           
-          if(!isValidNumber(balance)) return res.status(400).json({message : "Invalid balance"});
+          if(!isValidAmount(balance)) return res.status(400).json({message : "Invalid balance"});
       
           if (!isValidBoolean(hasMerchantWallet)) {
             return res.status(400).json({ message: "Invalid value for hasMerchantWallet. Must be true or false." });
