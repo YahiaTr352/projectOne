@@ -83,6 +83,7 @@ const CreateHashCode = async (req, res) => {
     }
 };
 
+
 const addUrl = async (req, res) => {
   try {
     const { companyName, programmName, code, url } = req.body;
@@ -676,6 +677,134 @@ const resendOTP = async (req, res) => {
         });
     }
 };
+const getAllCodesAndPrograms = async (req, res) => {
+  try {
+    const clients = await Client.find({}, '-url') // exclude the `url` field from Client
+      .populate({
+        path: 'merchantMSISDN',
+        select: 'merchantMSISDN -_id' // include only the merchantMSISDN string
+      });
+
+    res.status(200).json(clients);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching', error });
+  }
+};
+
+const getAllUrlsAndPrograms = async (req, res) => {
+  try {
+    const clients = await Client.find({}, '-code') // exclude the `url` field from Client
+      .populate({
+        path: 'merchantMSISDN',
+        select: 'merchantMSISDN -_id' // include only the merchantMSISDN string
+      });
+
+    res.status(200).json(clients);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching', error });
+  }
+};
+const deleteCodeById= async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedClient = await Client.findByIdAndDelete(id);
+
+    if (!deletedClient) {
+      return res.status(404).json({ message: 'code not found' });
+    }
+
+    res.status(200).json({ message: 'code deleted successfully', deletedClient });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting code', error });
+  }
+};
+const updateUrlById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { url } = req.body;
+
+    if (!url) {
+      return res.status(400).json({ message: 'URL is required' });
+    }
+
+    const updatedClient = await Client.findByIdAndUpdate(
+      id,
+      { url },
+      { new: true } // return the updated document
+    );
+
+    if (!updatedClient) {
+      return res.status(404).json({ message: 'program not found' });
+    }
+
+    res.status(200).json({ message: 'programm URL updated successfully', updatedClient });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating program URL', error });
+  }
+};
+
+const getCodeByMerchantNumber = async (req, res) => {
+  try {
+    const merchantNumber = req.header('merchantMSISDN');
+
+    if (!merchantNumber) {
+      return res.status(400).json({ message: 'Missing merchantMSISDN in headers' });
+    }
+
+    // Step 1: Find the Merchant by merchantMSISDN
+    const merchant = await Merchant.findOne({ merchantMSISDN: merchantNumber });
+
+    if (!merchant) {
+      return res.status(404).json({ message: 'Merchant not found' });
+    }
+
+    // Step 2: Find Clients for this Merchant
+    const clients = await Client.find({ merchantMSISDN: merchant._id }, '-url')
+      .populate({
+        path: 'merchantMSISDN',
+        select: 'merchantMSISDN -_id'
+      });
+
+    res.status(200).json(clients);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching codes', error });
+  }
+};
+
+const getUrlOfProgramByMerchentNumber = async (req, res) => {
+  try {
+    const merchantNumber = req.header('merchantMSISDN'); // e.g., 0999888777
+
+    if (!merchantNumber) {
+      return res.status(400).json({ message: 'Missing merchantMSISDN in headers' });
+    }
+
+    // Step 1: Find the Merchant by merchantMSISDN (number)
+    const merchant = await Merchant.findOne({ merchantMSISDN: merchantNumber });
+
+    if (!merchant) {
+      return res.status(404).json({ message: 'Merchant not found' });
+    }
+
+    // Step 2: Find Clients using merchant._id, exclude 'code'
+    const clients = await Client.find(
+      { merchantMSISDN: merchant._id },
+      '-code' // Exclude `code` field, include others like `url`, `programmName`, etc.
+    ).populate({
+      path: 'merchantMSISDN',
+      select: 'merchantMSISDN -_id' // include merchantMSISDN string only
+    });
+
+    res.status(200).json(clients);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching clients', error });
+  }
+};
+
+
+
+
 
 module.exports = {
     saveServer,
@@ -685,5 +814,11 @@ module.exports = {
     getToken,
     paymentRequest,
     paymentConfirmation,
-    resendOTP
+    resendOTP,
+    getAllCodesAndPrograms,
+    getAllUrlsAndPrograms,
+    deleteCodeById,
+    updateUrlById,
+    getCodeByMerchantNumber,
+    getUrlOfProgramByMerchentNumber,
 };
