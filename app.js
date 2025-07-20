@@ -12,7 +12,8 @@ const ensureTTLIndex = require("./utils/ensureTTLIndex");
 
     const allowedOrigins = [
       process.env.BASE_LOCAL_URL,
-      process.env.BASE_PACKAGE_URL // عدّلها حسب اسم موقعك ع Render
+      process.env.BASE_PACKAGE_URL ,// عدّلها حسب اسم موقعك ع Render
+      process.env.BASE_PACKAGE_URL_EDIT
     ];
 
     app.use(cors({
