@@ -6,18 +6,18 @@ const paymentTransaction = require("../models/paymentTransaction");
 const Otp = require("../models/otpModel");
 const PaymentTransaction = require("../models/paymentTransaction");
 const Customer = require("../models/customerModel");
-const {isValidAmount, calculateFees, generateNumericCode, findMerchantAndClient, validateCustomerPhoneNumber, validateMerchantPhoneNumber, isValidString, isValidOTP, isValidNumber } = require("../utils/paymentUtils");
+const { isValidAmount, calculateFees, generateNumericCode, findMerchantAndClient, validateCustomerPhoneNumber, validateMerchantPhoneNumber, isValidString, isValidOTP, isValidNumber } = require("../utils/paymentUtils");
 const { encryptBalance, decryptBalance } = require('../utils/encryption');
 const { verifyToken } = require("../utils/paymentUtils");
 const sendSMSWithTextBee = require("../utils/sendSMSWithTextBee");
 
 
-const saveServer = (req,res) => {
-    try{
-        return res.status(200).json({message : "server is running"});
+const saveServer = (req, res) => {
+    try {
+        return res.status(200).json({ message: "server is running" });
 
-    }catch(error){
-        return res.status(400).json({message : "something went wrong" , error})
+    } catch (error) {
+        return res.status(400).json({ message: "something went wrong", error })
     }
 }
 
@@ -61,14 +61,14 @@ const CreateHashCode = async (req, res) => {
         }
 
         const code = generateNumericCode(12);
-        const salt = await bcrypt.genSalt(10);
-        const hashedCode = await bcrypt.hash(code, salt);
+        // const salt = await bcrypt.genSalt(10);
+        // const hashedCode = await bcrypt.hash(code, salt);
 
         const newClient = new Client({
             companyName,
             programmName,
             merchantMSISDN: merchant._id,
-            code: hashedCode
+            code
         });
 
         await newClient.save();
@@ -85,79 +85,81 @@ const CreateHashCode = async (req, res) => {
 
 
 const addUrl = async (req, res) => {
-  try {
-    const { companyName, programmName, code, url } = req.body;
+    try {
+        const { companyName, programmName, code, url } = req.body;
 
-    if(!companyName || !programmName || !code || !url) return res.status(400).json({message : "All fields are required"});
+        if (!companyName || !programmName || !code || !url) return res.status(400).json({ message: "All fields are required" });
 
-    const existingClient = await Client.findOne({ companyName, programmName});
+        const existingClient = await Client.findOne({ companyName, programmName });
 
-    if (!existingClient) {
-      return res.status(404).json({ message: "Client with the specified companyName or programmName  not found." });
-    }
+        if (!existingClient) {
+            return res.status(404).json({ message: "Client with the specified companyName or programmName  not found." });
+        }
 
 
-    const isCodeValid = await bcrypt.compare(code, existingClient.code);
+        // const isCodeValid = await bcrypt.compare(code, existingClient.code);
+        const isCodeValid = await Client.findOne({ code });
         if (!isCodeValid) {
-      return res.status(404).json({ message: "Invalid Code" });
+            return res.status(404).json({ message: "Invalid Code" });
+        }
+
+        existingClient.url = url;
+
+        await existingClient.save();
+
+        res.status(200).json({ message: "URL added successfully", data: existingClient });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Something went wrong. Please try again later." });
     }
-
-    existingClient.url = url;
-
-    await existingClient.save();
-
-    res.status(200).json({ message: "URL added successfully", data: existingClient });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Something went wrong. Please try again later." });
-  }
 };
 
 
 const getUrl = async (req, res) => {
-  try {
-    const { companyName, programmName, code } = req.body;
+    try {
+        const { companyName, programmName, code } = req.body;
 
-    if (!companyName || !programmName || !code) {
-      return res.status(400).json({ message: "Missing required parameters." });
-    }
+        if (!companyName || !programmName || !code) {
+            return res.status(400).json({ message: "Missing required parameters." });
+        }
 
-    const existingClient = await Client.findOne({ companyName, programmName});
+        const existingClient = await Client.findOne({ companyName, programmName });
 
-    if (!existingClient) {
-      return res.status(404).json({ message: "Client with the specified companyName or programmName  not found." });
-    }
+        if (!existingClient) {
+            return res.status(404).json({ message: "Client with the specified companyName or programmName  not found." });
+        }
 
 
-    const isCodeValid = await bcrypt.compare(code, existingClient.code);
+        // const isCodeValid = await bcrypt.compare(code, existingClient.code);
+        const isCodeValid = await Client.findOne({code});
         if (!isCodeValid) {
-      return res.status(404).json({ message: "Invalid Code" });
-    }
+            return res.status(404).json({ message: "Invalid Code" });
+        }
 
-    if (existingClient.url) {
-      return res.status(200).json({ url: existingClient.url });
-    } else {
-      return res.status(404).json({ message: "URL not found for this client." });
-    }
+        if (existingClient.url) {
+            return res.status(200).json({ url: existingClient.url });
+        } else {
+            return res.status(404).json({ message: "URL not found for this client." });
+        }
 
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Something went wrong. Please try again later." });
-  }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Something went wrong. Please try again later." });
+    }
 }
 
 const getToken = async (req, res) => {
     try {
         const { companyName, programmName, merchantMSISDN, code } = req.body;
 
-        if (!companyName || !programmName || !code || !merchantMSISDN) return res.status(400).json({message : "All fields are required"});
+        if (!companyName || !programmName || !code || !merchantMSISDN) return res.status(400).json({ message: "All fields are required" });
 
-        if(!isValidString(companyName)) return res.status(400).json({message : "Invalid CompanyName"});
-        if(!isValidString(programmName)) return res.status(400).json({message : "Invalid ProgrammName"});
+        if (!isValidString(companyName)) return res.status(400).json({ message: "Invalid CompanyName" });
+        if (!isValidString(programmName)) return res.status(400).json({ message: "Invalid ProgrammName" });
         if (!validateMerchantPhoneNumber(merchantMSISDN)) {
             return res.status(400).json({ message: "Invalid Merchant Phone Number. It must start with a '+' followed by digits." });
         }
-        if(!isValidNumber(code)) return res.status(400).json({message : "Invalid Code"});
+        if (!isValidNumber(code)) return res.status(400).json({ message: "Invalid Code" });
 
 
         const merchant = await Merchant.findOne({ merchantMSISDN });
@@ -168,10 +170,10 @@ const getToken = async (req, res) => {
             });
         }
 
-        const client = await Client.findOne({ 
-            companyName, 
-            programmName, 
-            merchantMSISDN: merchant._id 
+        const client = await Client.findOne({
+            companyName,
+            programmName,
+            merchantMSISDN: merchant._id
         });
 
         if (!client) {
@@ -181,7 +183,8 @@ const getToken = async (req, res) => {
             });
         }
 
-        const isMatch = await bcrypt.compare(code, client.code);
+        // const isMatch = await bcrypt.compare(code, client.code);
+        const isMatch = await Client.findOne({ code });
 
         if (!isMatch) {
             return res.status(401).json({
@@ -192,7 +195,7 @@ const getToken = async (req, res) => {
 
         const token = jwt.sign(
             { companyId: client._id },
-             process.env.TOKEN_SECRET_KEY,
+            process.env.TOKEN_SECRET_KEY,
             { expiresIn: '15m' }
         );
 
@@ -203,10 +206,10 @@ const getToken = async (req, res) => {
         });
 
     } catch (error) {
-        return res.status(500).json({ 
+        return res.status(500).json({
             errorCode: -500,
             errorDesc: "Technical Error",
-            message: error.message 
+            message: error.message
         });
     }
 };
@@ -223,9 +226,9 @@ const paymentRequest = async (req, res) => {
             });
         }
 
-        if(!isValidNumber(code)) return res.status(400).json({message : "Invalid Code"});
+        if (!isValidNumber(code)) return res.status(400).json({ message: "Invalid Code" });
 
-        if(!validateCustomerPhoneNumber(customerMSISDN)) return res.status(400).json({message : "Invalid phone number. It must be a Syrian number starting with 09."});
+        if (!validateCustomerPhoneNumber(customerMSISDN)) return res.status(400).json({ message: "Invalid phone number. It must be a Syrian number starting with 09." });
 
         if (!validateMerchantPhoneNumber(merchantMSISDN)) {
             return res.status(400).json({ message: "Invalid merchant phone number. It must start with a '+' followed by digits." });
@@ -238,7 +241,7 @@ const paymentRequest = async (req, res) => {
             });
         }
 
-        if(!isValidString(transactionID)) return res.status(400).json({message : "Invalid transactionID"});
+        if (!isValidString(transactionID)) return res.status(400).json({ message: "Invalid transactionID" });
 
         const { valid } = verifyToken(token);
         if (!valid) {
@@ -275,30 +278,30 @@ const paymentRequest = async (req, res) => {
             .populate('customerMSISDN', 'customerMSISDN')
             .populate('merchantMSISDN', 'merchantMSISDN');
 
-            if (existingTransaction) {
-                const now = new Date();
-                const elapsedMinutes = (now - new Date(existingTransaction.createdAt)) / 1000 / 60;
-                if (elapsedMinutes >= 10) {
-                    return res.status(400).json({
-                        errorCode: -98,
-                        errorDesc: "Expired transaction (10 minutes have been passed)"
-                    });
-                }
-            
-                if (
-                    existingTransaction.customerMSISDN.customerMSISDN !== customerMSISDN ||
-                    existingTransaction.merchantMSISDN.merchantMSISDN !== merchantMSISDN ||
-                    existingTransaction.amount !== Number(amount)
-                ) {
-                    return res.status(409).json({
-                        errorCode: -101,
-                        errorDesc: 'Duplicated transaction ID with different parameters'
-                    });
-                }
+        if (existingTransaction) {
+            const now = new Date();
+            const elapsedMinutes = (now - new Date(existingTransaction.createdAt)) / 1000 / 60;
+            if (elapsedMinutes >= 10) {
+                return res.status(400).json({
+                    errorCode: -98,
+                    errorDesc: "Expired transaction (10 minutes have been passed)"
+                });
             }
 
+            if (
+                existingTransaction.customerMSISDN.customerMSISDN !== customerMSISDN ||
+                existingTransaction.merchantMSISDN.merchantMSISDN !== merchantMSISDN ||
+                existingTransaction.amount !== Number(amount)
+            ) {
+                return res.status(409).json({
+                    errorCode: -101,
+                    errorDesc: 'Duplicated transaction ID with different parameters'
+                });
+            }
+        }
+
         const OTP = generateNumericCode(6);
-        
+
         const fees = calculateFees(amount);
 
         await Otp.findOneAndUpdate(
@@ -344,7 +347,7 @@ const paymentRequest = async (req, res) => {
             
             Thank you for choosing our service.`
         );
-        
+
 
         return res.status(200).json({
             errorCode: 0,
@@ -373,17 +376,17 @@ const paymentConfirmation = async (req, res) => {
             });
         }
 
-        if(!isValidNumber(code)) return res.status(400).json({message : "Invalid Code"});
+        if (!isValidNumber(code)) return res.status(400).json({ message: "Invalid Code" });
 
         if (!validateMerchantPhoneNumber(merchantMSISDN)) {
-            return res.status(400).json({ 
-                message: "Invalid merchant phone number. It must start with a '+' followed by digits." 
+            return res.status(400).json({
+                message: "Invalid merchant phone number. It must start with a '+' followed by digits."
             });
         }
 
-        if(!isValidOTP(OTP)) return res.status(400).json({message : "Invalid OTP"});
+        if (!isValidOTP(OTP)) return res.status(400).json({ message: "Invalid OTP" });
 
-        if(!isValidString(transactionID)) return res.status(400).json({message : "Invalid transactionID"});
+        if (!isValidString(transactionID)) return res.status(400).json({ message: "Invalid transactionID" });
 
         const { valid } = verifyToken(token);
         if (!valid) {
@@ -397,12 +400,12 @@ const paymentConfirmation = async (req, res) => {
             .populate('customerMSISDN')
             .populate('merchantMSISDN', 'merchantMSISDN');
 
-            if (existingTransaction.success) {
-                return res.status(409).json({
-                    errorCode: -97,
-                    errorDesc: "This transaction has already been confirmed"
-                });
-            }
+        if (existingTransaction.success) {
+            return res.status(409).json({
+                errorCode: -97,
+                errorDesc: "This transaction has already been confirmed"
+            });
+        }
 
         const { merchant, matchedClient } = await findMerchantAndClient(merchantMSISDN, code);
 
@@ -415,7 +418,7 @@ const paymentConfirmation = async (req, res) => {
 
 
         if (
-            existingTransaction.merchantMSISDN.merchantMSISDN !== merchantMSISDN 
+            existingTransaction.merchantMSISDN.merchantMSISDN !== merchantMSISDN
         ) {
             return res.status(409).json({
                 errorCode: -101,
@@ -543,7 +546,7 @@ const paymentConfirmation = async (req, res) => {
             .populate('customerMSISDN', 'customerMSISDN')
             .populate('merchantMSISDN', 'merchantMSISDN');
 
-            await sendSMSWithTextBee(
+        await sendSMSWithTextBee(
             populatedTransaction.customerMSISDN.customerMSISDN,
             `Your payment was completed successfully.
             Customer: ${populatedTransaction.customerMSISDN.customerMSISDN}
@@ -552,9 +555,9 @@ const paymentConfirmation = async (req, res) => {
             Fees: ${populatedTransaction.fees} SYP
             Program: ${populatedTransaction.programmName}
             Thank you for choosing our service.`
-            );
+        );
 
-            await sendSMSWithTextBee(
+        await sendSMSWithTextBee(
             populatedTransaction.merchantMSISDN.merchantMSISDN,
             `Payment received successfully.
             customer: ${populatedTransaction.customerMSISDN.customerMSISDN}
@@ -563,7 +566,7 @@ const paymentConfirmation = async (req, res) => {
             company : ${populatedTransaction.companyName}
             Program: ${populatedTransaction.programmName}
             Thank you for using our platform.`
-            );
+        );
 
 
 
@@ -583,7 +586,7 @@ const paymentConfirmation = async (req, res) => {
 
 const resendOTP = async (req, res) => {
     try {
-        const { code , merchantMSISDN, transactionID, token } = req.body;
+        const { code, merchantMSISDN, transactionID, token } = req.body;
 
         if (!code || !merchantMSISDN || !transactionID || !token) {
             return res.status(400).json({
@@ -592,13 +595,13 @@ const resendOTP = async (req, res) => {
             });
         }
 
-        if(!isValidNumber(code)) return res.status(400).json({message : "Invalid Code"});
+        if (!isValidNumber(code)) return res.status(400).json({ message: "Invalid Code" });
 
         if (!validateMerchantPhoneNumber(merchantMSISDN)) {
             return res.status(400).json({ message: "Invalid merchant phone number. It must start with a '+' followed by digits." });
         }
 
-        if(!isValidString(transactionID)) return res.status(400).json({message : "Invalid transactionID"});
+        if (!isValidString(transactionID)) return res.status(400).json({ message: "Invalid transactionID" });
 
         const { valid } = verifyToken(token);
         if (!valid) {
@@ -660,9 +663,9 @@ const resendOTP = async (req, res) => {
                 }
             },
             { upsert: true, new: true }
-        );        
+        );
 
-        await sendSMSWithTextBee(transaction.customerMSISDN.customerMSISDN,`new code is: ${newOtp}`);
+        await sendSMSWithTextBee(transaction.customerMSISDN.customerMSISDN, `new code is: ${newOtp}`);
 
         return res.status(200).json({
             errorCode: 0,
@@ -677,134 +680,166 @@ const resendOTP = async (req, res) => {
         });
     }
 };
-const getAllCodesAndPrograms = async (req, res) => {
-  try {
-    const clients = await Client.find({}, '-url') // exclude the `url` field from Client
-      .populate({
-        path: 'merchantMSISDN',
-        select: 'merchantMSISDN -_id' // include only the merchantMSISDN string
-      });
 
-    res.status(200).json(clients);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching', error });
-  }
+const getAllCodesAndPrograms = async (req, res) => {
+    try {
+        const clients = await Client.find({}, '-url') // exclude the `url` field from Client
+            .populate({
+                path: 'merchantMSISDN',
+                select: 'merchantMSISDN -_id' // include only the merchantMSISDN string
+            });
+
+        res.status(200).json(clients);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching', error });
+    }
 };
 
 const getAllUrlsAndPrograms = async (req, res) => {
-  try {
-    const clients = await Client.find({}, '-code') // exclude the `url` field from Client
-      .populate({
-        path: 'merchantMSISDN',
-        select: 'merchantMSISDN -_id' // include only the merchantMSISDN string
-      });
+    try {
+        const clients = await Client.find({}, '-code') // exclude the `url` field from Client
+            .populate({
+                path: 'merchantMSISDN',
+                select: 'merchantMSISDN -_id' // include only the merchantMSISDN string
+            });
 
-    res.status(200).json(clients);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching', error });
-  }
-};
-const deleteCodeById= async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const deletedClient = await Client.findByIdAndDelete(id);
-
-    if (!deletedClient) {
-      return res.status(404).json({ message: 'code not found' });
+        res.status(200).json(clients);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching', error });
     }
+};
+const deleteCodeById = async (req, res) => {
+    try {
+        const { id } = req.params;
 
-    res.status(200).json({ message: 'code deleted successfully', deletedClient });
-  } catch (error) {
-    res.status(500).json({ message: 'Error deleting code', error });
-  }
+        const deletedClient = await Client.findByIdAndDelete(id);
+
+        if (!deletedClient) {
+            return res.status(404).json({ message: 'code not found' });
+        }
+
+        res.status(200).json({ message: 'code deleted successfully', deletedClient });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting code', error });
+    }
 };
 const updateUrlById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { url } = req.body;
+    try {
+        const { id } = req.params;
+        const { url } = req.body;
 
-    if (!url) {
-      return res.status(400).json({ message: 'URL is required' });
+        if (!url) {
+            return res.status(400).json({ message: 'URL is required' });
+        }
+
+        const updatedClient = await Client.findByIdAndUpdate(
+            id,
+            { url },
+            { new: true } // return the updated document
+        );
+
+        if (!updatedClient) {
+            return res.status(404).json({ message: 'program not found' });
+        }
+
+        res.status(200).json({ message: 'programm URL updated successfully', updatedClient });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating program URL', error });
     }
-
-    const updatedClient = await Client.findByIdAndUpdate(
-      id,
-      { url },
-      { new: true } // return the updated document
-    );
-
-    if (!updatedClient) {
-      return res.status(404).json({ message: 'program not found' });
-    }
-
-    res.status(200).json({ message: 'programm URL updated successfully', updatedClient });
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating program URL', error });
-  }
 };
 
 const getCodeByMerchantNumber = async (req, res) => {
-  try {
-    const merchantNumber = req.header('merchantMSISDN');
+    try {
+        const merchantNumber = req.header('merchantMSISDN');
 
-    if (!merchantNumber) {
-      return res.status(400).json({ message: 'Missing merchantMSISDN in headers' });
+        if (!merchantNumber) {
+            return res.status(400).json({ message: 'Missing merchantMSISDN in headers' });
+        }
+
+        // Step 1: Find the Merchant by merchantMSISDN
+        const merchant = await Merchant.findOne({ merchantMSISDN: merchantNumber });
+
+        if (!merchant) {
+            return res.status(404).json({ message: 'Merchant not found' });
+        }
+
+        // Step 2: Find Clients for this Merchant
+        const clients = await Client.find({ merchantMSISDN: merchant._id }, '-url')
+            .populate({
+                path: 'merchantMSISDN',
+                select: 'merchantMSISDN -_id'
+            });
+
+        res.status(200).json(clients);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching codes', error });
     }
-
-    // Step 1: Find the Merchant by merchantMSISDN
-    const merchant = await Merchant.findOne({ merchantMSISDN: merchantNumber });
-
-    if (!merchant) {
-      return res.status(404).json({ message: 'Merchant not found' });
-    }
-
-    // Step 2: Find Clients for this Merchant
-    const clients = await Client.find({ merchantMSISDN: merchant._id }, '-url')
-      .populate({
-        path: 'merchantMSISDN',
-        select: 'merchantMSISDN -_id'
-      });
-
-    res.status(200).json(clients);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching codes', error });
-  }
 };
 
 const getUrlOfProgramByMerchentNumber = async (req, res) => {
-  try {
-    const merchantNumber = req.header('merchantMSISDN'); // e.g., 0999888777
+    try {
+        const merchantNumber = req.header('merchantMSISDN'); // e.g., 0999888777
 
-    if (!merchantNumber) {
-      return res.status(400).json({ message: 'Missing merchantMSISDN in headers' });
+        if (!merchantNumber) {
+            return res.status(400).json({ message: 'Missing merchantMSISDN in headers' });
+        }
+
+        // Step 1: Find the Merchant by merchantMSISDN (number)
+        const merchant = await Merchant.findOne({ merchantMSISDN: merchantNumber });
+
+        if (!merchant) {
+            return res.status(404).json({ message: 'Merchant not found' });
+        }
+
+        // Step 2: Find Clients using merchant._id, exclude 'code'
+        const clients = await Client.find(
+            { merchantMSISDN: merchant._id },
+            '-code' // Exclude `code` field, include others like `url`, `programmName`, etc.
+        ).populate({
+            path: 'merchantMSISDN',
+            select: 'merchantMSISDN -_id' // include merchantMSISDN string only
+        });
+
+        res.status(200).json(clients);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching clients', error });
     }
-
-    // Step 1: Find the Merchant by merchantMSISDN (number)
-    const merchant = await Merchant.findOne({ merchantMSISDN: merchantNumber });
-
-    if (!merchant) {
-      return res.status(404).json({ message: 'Merchant not found' });
-    }
-
-    // Step 2: Find Clients using merchant._id, exclude 'code'
-    const clients = await Client.find(
-      { merchantMSISDN: merchant._id },
-      '-code' // Exclude `code` field, include others like `url`, `programmName`, etc.
-    ).populate({
-      path: 'merchantMSISDN',
-      select: 'merchantMSISDN -_id' // include merchantMSISDN string only
-    });
-
-    res.status(200).json(clients);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching clients', error });
-  }
 };
 
+const getAllUsers = async (req, res) => {
+  try {
+    const { msisdn } = req.query;
+    const merchantQuery = msisdn ? { merchantMSISDN: msisdn } : {};
+    const customerQuery = msisdn ? { customerMSISDN: msisdn } : {};
 
+    const merchants = await Merchant.find(merchantQuery, "merchantMSISDN balance").lean();
+    const merchantData = merchants.map(m => ({
+      msisdn: m.merchantMSISDN,
+      role: "merchant",
+      balance: decryptBalance(m.balance) || 0
+    }));
 
+    const customers = await Customer.find(customerQuery, "customerMSISDN balance").lean();
+    const customerData = customers.map(c => ({
+      msisdn: c.customerMSISDN,
+      role: "customer",
+      balance: decryptBalance(c.balance) || 0
+    }));
 
+    const allUsers = [...merchantData, ...customerData];
+
+    res.status(200).json({
+      success: true,
+      data: allUsers
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error"
+    });
+  }
+};
 
 module.exports = {
     saveServer,
@@ -821,4 +856,5 @@ module.exports = {
     updateUrlById,
     getCodeByMerchantNumber,
     getUrlOfProgramByMerchentNumber,
+    getAllUsers
 };
